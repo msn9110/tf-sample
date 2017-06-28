@@ -38,15 +38,17 @@ def main():
             result = tf.reshape(tf.matmul(W,tf.transpose(X)), [])
 
             # activation function
-            Y_ = tf.cond(tf.greater_equal(result, T), lambda : tf.constant(1), lambda : tf.constant(0))
-            Y = tf.placeholder(tf.int32, shape=[])
+            Y_ = tf.cond(tf.greater_equal(result, T), lambda : tf.constant(1.0), lambda : tf.constant(0.0))
+            Y = tf.placeholder(tf.float32, shape=[])
             # misclassfication function
             loss = tf.cast(tf.subtract(Y, Y_), tf.float32)
-            optimizer = tf.train.GradientDescentOptimizer(rate)
-            # train = optimizer.minimize(loss)
+            #loss = tf.reduce_mean(tf.subtract(Y_,Y))
+            optimizer = tf.train.AdamOptimizer(rate)
+            #train = optimizer.minimize(loss)
             train = tf.assign(W, tf.add(W, tf.scalar_mul(tf.multiply(tf.constant(rate), loss), X)))
             init = tf.global_variables_initializer()
 
+            previous = [1.0, 1.0]
             w = None
             with tf.Session() as sess:
                 sess.run(init)
@@ -61,8 +63,11 @@ def main():
                         #print('loss : ', sess.run(loss, feed_dict={X: input1, Y: results[i]}))
                         sess.run(train, feed_dict={X: input1, Y: results[i]})
                     w = sess.run(W)
-            print(w[0][0], w[0][1])
-            drawLinearFunction(w[0][0], w[0][1], threshold, 'purple')
+                    if previous[0] == w[0][0] and previous[1] == w[0][1]:
+                        break
+                    previous[0], previous[1] = w[0][0], w[0][1]
+            print(w[0][0], w[0][1], -w[0][0]/w[0][1])
+            drawLinearFunction(w[0][0], w[0][1], threshold, mean_x, mean_y, 'purple')
 
     def changeColor():
         nonlocal current
@@ -74,16 +79,16 @@ def main():
         getData(event.x,event.y)
         drawPoint(event.x,event.y,colors[current])
 
-    def drawLinearFunction(w0,w1, threshold, color):
+    def drawLinearFunction(w0, w1, threshold, mean_x, mean_y, color):
         x1 = -250
-        y1 = (threshold - w0 * x1) / w1
+        y1 = (threshold - w0 * (x1 - mean_x)) / w1 + mean_y
         x2 = 250
-        y2 = (threshold - w0 * x2) / w1
+        y2 = (threshold - w0 * (x2 - mean_x)) / w1 + mean_y
         x1, y1 = in_normalize(x1, y1, 250)
         x2, y2 = in_normalize(x2, y2, 250)
         canvas.create_line(x1, y1, x2, y2, fill=color)
     def drawPoint(x,y,color):
-        size = 7
+        size = 5
         x1, y1 = x - size, y - size
         x2, y2 = x + size, y + size
         canvas.create_rectangle(x1, y1, x2, y2, fill=color)
@@ -142,7 +147,7 @@ def main():
     lbl2.pack(pady=10)
 
     txtInput2 = Text(frame2, font=12, width=35, height=1)
-    txtInput2.insert(INSERT,'100')
+    txtInput2.insert(INSERT,'1000')
     txtInput2.pack(padx=10, pady=10)
 
     btnReset = Button(frame2, font=12, width=35, height=3, bd=5, text='重設', command=reset)
