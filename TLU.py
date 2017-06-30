@@ -7,6 +7,7 @@ def main():
     colors = ['lime', 'cyan']
 
     # input record
+    data = [[], []]
     inputs = []
     results = []
 
@@ -21,34 +22,43 @@ def main():
             print('parsing error !')
         else:
             print(rate, ',', time)
-            tmp = np.transpose(np.asarray(inputs))
-            mean_x = int(sum(tmp[0] / len(results)))
-            mean_y = int(sum(tmp[1] / len(results)))
+            size0, size1 = len(data[0]), len(data[1])
+            class0 = np.transpose(np.asarray(data[0], np.float32))
+            class1 = np.transpose(np.asarray(data[1], np.float32))
+            mean_x = int((sum(class0[0]) / size0 + sum(class1[0]) / size1) /2)
+            mean_y = int((sum(class0[1]) / size0 + sum(class1[1]) / size1) /2)
             threshold = mean_x + mean_y
+            print('(mean_x, mean_y, threshold) : (', mean_x, ',', mean_y, ',', threshold, ')')
             x, y = in_normalize(mean_x, mean_y, 250)
             drawPoint(x, y, color='red')
+
             # prepare training data
             train_X = np.asarray(inputs, np.float32)
-            print(train_X[0], train_X[0].shape)
+            train_Y = np.asarray(results, np.float32).reshape([1, len(results)])
 
             # create tf model start
-            X = tf.placeholder(tf.float32, shape=[1, 2])
+            X = tf.placeholder(tf.float32, shape=[None, 2])
             W = tf.Variable(tf.ones([1,2],tf.float32))
-            T = tf.constant(threshold, tf.float32, shape=[])
-            result = tf.reshape(tf.matmul(W,tf.transpose(X)), [])
+            T = tf.constant(threshold, tf.float32, shape=[1, len(results)])
+            result = tf.matmul(W, tf.transpose(X))
 
             # activation function
-            Y_ = tf.cond(tf.greater_equal(result, T), lambda : tf.constant(1.0), lambda : tf.constant(0.0))
-            Y = tf.placeholder(tf.float32, shape=[])
+            Y_ = tf.where(tf.greater_equal(result, T), tf.ones(tf.shape(result), tf.float32),
+                                                tf.zeros(tf.shape(result), tf.float32))
+            #Y_ = tf.cond(tf.greater_equal(result, T), lambda : tf.constant(1.0), lambda : tf.constant(0.0))
+            Y = tf.placeholder(tf.float32, shape=[1, len(results)])
+
             # misclassfication function
-            loss = tf.cast(tf.subtract(Y, Y_), tf.float32)
-            #loss = tf.reduce_mean(tf.subtract(Y_,Y))
-            optimizer = tf.train.AdamOptimizer(rate)
+            #loss = tf.reduce_mean(tf.matmul(tf.matmul(Y_-Y,X),tf.transpose(W)), 0)
+            offset = tf.reshape(tf.reduce_mean(tf.matmul(Y_-Y, X), 0), [1,2])
+            train = tf.assign_add(W, tf.scalar_mul(rate, offset))
+
+            optimizer = tf.train.GradientDescentOptimizer(rate)
             #train = optimizer.minimize(loss)
-            train = tf.assign(W, tf.add(W, tf.scalar_mul(tf.multiply(tf.constant(rate), loss), X)))
+            #train = tf.assign(W, tf.add(W, tf.scalar_mul(tf.multiply(tf.constant(rate), loss), X)))
             init = tf.global_variables_initializer()
 
-            previous = [1.0, 1.0]
+            slope = -1.0
             w = None
             with tf.Session() as sess:
                 sess.run(init)
@@ -56,37 +66,36 @@ def main():
                 for t in range(time):
                     if t % 20 == 0:
                         print(sess.run(W))
-                    for i in range(len(inputs)):
-                        input1 = train_X[i].reshape([1,2])
-                        #print(sess.run(result, feed_dict={X: input1}))
-                        #print('predict : ', sess.run(Y_, feed_dict={X: input1}))
-                        #print('loss : ', sess.run(loss, feed_dict={X: input1, Y: results[i]}))
-                        sess.run(train, feed_dict={X: input1, Y: results[i]})
+                    print(sess.run(train, feed_dict={X: train_X, Y: train_Y}))
+                    #print(sess.run(loss, feed_dict={X: train_X, Y: train_Y}))
                     w = sess.run(W)
-                    if previous[0] == w[0][0] and previous[1] == w[0][1]:
+                    m = -w[0][0] / w[0][1]
+                    if m - slope < 0.02:
+                        print('learning time : ', t)
                         break
-                    previous[0], previous[1] = w[0][0], w[0][1]
+                    slope = m
             print(w[0][0], w[0][1], -w[0][0]/w[0][1])
-            drawLinearFunction(w[0][0], w[0][1], threshold, mean_x, mean_y, 'purple')
+            drawLinearFunction(w[0][0], w[0][1], mean_x, mean_y, 'red')
 
     def changeColor():
         nonlocal current
-        current=(current+1)%2
-        color=colors[current]
-        btnChange["bg"]=color
+        current = (current + 1) % 2
+        color = colors[current]
+        btnChange["bg"] = color
 
     def addData(event):
-        getData(event.x,event.y)
-        drawPoint(event.x,event.y,colors[current])
+        getData(event.x, event.y)
+        drawPoint(event.x, event.y, colors[current])
 
-    def drawLinearFunction(w0, w1, threshold, mean_x, mean_y, color):
+    def drawLinearFunction(w0, w1, mean_x, mean_y, color):
         x1 = -250
-        y1 = (threshold - w0 * (x1 - mean_x)) / w1 + mean_y
+        y1 = -(w0 * (x1 - mean_x)) / w1 + mean_y
         x2 = 250
-        y2 = (threshold - w0 * (x2 - mean_x)) / w1 + mean_y
+        y2 = -(w0 * (x2 - mean_x)) / w1 + mean_y
         x1, y1 = in_normalize(x1, y1, 250)
         x2, y2 = in_normalize(x2, y2, 250)
         canvas.create_line(x1, y1, x2, y2, fill=color)
+
     def drawPoint(x,y,color):
         size = 5
         x1, y1 = x - size, y - size
@@ -94,16 +103,18 @@ def main():
         canvas.create_rectangle(x1, y1, x2, y2, fill=color)
 
     def reset():
-        nonlocal inputs,results
+        nonlocal inputs,results,data
         canvas.delete('all')
         canvas.create_line(250, 0, 250, 500)
         canvas.create_line(0, 250, 500, 250)
+        data = [[], []]
         inputs=[]
         results=[]
 
-    def getData(x,y):
+    def getData(x, y):
         results.append(current)
-        a=normalize(x,y,250)
+        a = normalize(x, y, 250)
+        data[current].append(a)
         inputs.append(a)
         print('(', a[0], ',', a[1], ',', current, ')')
 
