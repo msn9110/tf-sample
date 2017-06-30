@@ -50,7 +50,7 @@ def main():
 
             # misclassfication function
             loss = tf.reduce_mean(tf.matmul(Y_-Y,tf.transpose(tf.matmul(W,tf.transpose(X)) - T)))
-            #offset = tf.reshape(tf.reduce_mean(tf.matmul(Y_-Y, X), 0), [1,2])
+            offset = tf.reshape(tf.reduce_mean(tf.matmul(Y_-Y, X), 0), [1,2])
 
 
             optimizer = tf.train.GradientDescentOptimizer(rate)
@@ -69,9 +69,9 @@ def main():
                         sess.run(train, feed_dict={X: train_X, Y: train_Y})
                     w = sess.run(W)
                     m = -w[0][0] / w[0][1]
-                    if m - slope < 0.02:
-                        print('learning time : ', t + 1)
-                        break
+                    #if m - slope < 0.02:
+                     #   print('learning time : ', t + 1)
+                     #   break
                     slope = m
             print(w[0][0], w[0][1], -w[0][0]/w[0][1])
             drawLinearFunction(w[0][0], w[0][1], mean_x, mean_y, 'red')
