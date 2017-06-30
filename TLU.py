@@ -49,13 +49,13 @@ def main():
             Y = tf.placeholder(tf.float32, shape=[1, len(results)])
 
             # misclassfication function
-            #loss = tf.reduce_mean(tf.matmul(tf.matmul(Y_-Y,X),tf.transpose(W)), 0)
-            offset = tf.reshape(tf.reduce_mean(tf.matmul(Y_-Y, X), 0), [1,2])
-            train = tf.assign_add(W, tf.scalar_mul(rate, offset))
+            loss = tf.reduce_mean(tf.matmul(Y_-Y,tf.transpose(tf.matmul(W,tf.transpose(X)) - T)))
+            #offset = tf.reshape(tf.reduce_mean(tf.matmul(Y_-Y, X), 0), [1,2])
+
 
             optimizer = tf.train.GradientDescentOptimizer(rate)
-            #train = optimizer.minimize(loss)
-            #train = tf.assign(W, tf.add(W, tf.scalar_mul(tf.multiply(tf.constant(rate), loss), X)))
+            train = optimizer.minimize(loss)
+            #train = tf.assign_add(W, tf.scalar_mul(rate, offset))
             init = tf.global_variables_initializer()
 
             slope = -1.0
@@ -66,12 +66,11 @@ def main():
                 for t in range(time):
                     if t % 20 == 0:
                         print(sess.run(W))
-                    print(sess.run(train, feed_dict={X: train_X, Y: train_Y}))
-                    #print(sess.run(loss, feed_dict={X: train_X, Y: train_Y}))
+                        sess.run(train, feed_dict={X: train_X, Y: train_Y})
                     w = sess.run(W)
                     m = -w[0][0] / w[0][1]
                     if m - slope < 0.02:
-                        print('learning time : ', t)
+                        print('learning time : ', t + 1)
                         break
                     slope = m
             print(w[0][0], w[0][1], -w[0][0]/w[0][1])
