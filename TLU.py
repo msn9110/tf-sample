@@ -11,7 +11,7 @@ def main():
     inputs = []
     results = []
 
-    def beginLearn():
+    def beginLearn(mode):
         print('click')
         try:
             # learning rate
@@ -56,15 +56,19 @@ def main():
             Y = tf.placeholder(tf.float32, shape=[1, len(results)])
 
             # misclassfication function
-            #loss = tf.reduce_mean(tf.abs(Y_-Y) * tf.matmul(W,tf.transpose(X)) - T)
-            #loss = tf.reduce_mean(tf.matmul(Y_ - Y, tf.transpose(tf.matmul(W, tf.transpose(X)) - T)))
-            loss = tf.reduce_mean(tf.matmul(tf.abs(Y_-Y), tf.transpose(tf.matmul(W, tf.transpose(X)) - T)))
+            if mode == 1:
+                loss = tf.reduce_mean(tf.abs(Y_ - Y) * tf.matmul(W, tf.transpose(X)) - T)
+            elif mode == 2:
+                loss = tf.reduce_mean(tf.matmul(Y_ - Y, tf.transpose(tf.matmul(W, tf.transpose(X)) - T)))
+            else:
+                loss = tf.reduce_mean(tf.matmul(tf.abs(Y_ - Y), tf.transpose(tf.matmul(W, tf.transpose(X)) - T)))
+
             offset = tf.reduce_mean(tf.matmul(Y_-Y, X), 0, keep_dims=True)
-
-
-            optimizer = tf.train.GradientDescentOptimizer(rate)
-            train = optimizer.minimize(loss)
-            #train = tf.assign_add(W, tf.scalar_mul(rate, offset))
+            optimizer = tf.train.AdamOptimizer(rate)
+            if mode == 0:
+                train = tf.assign_add(W, tf.scalar_mul(rate, offset))
+            else:
+                train = optimizer.minimize(loss)
             init = tf.global_variables_initializer()
 
             with tf.Session() as sess:
@@ -118,13 +122,17 @@ def main():
         canvas.create_line(250, 0, 250, 500)
         canvas.create_line(0, 250, 500, 250)
 
-    def reset():
+    def reset(mode):
         nonlocal inputs,results,data
         canvas.delete('all')
         drawAxis()
-        data = [[], []]
-        inputs=[]
-        results=[]
+        if mode == 0:
+            data = [[], []]
+            inputs = []
+            results = []
+        else:
+            drawData(0)
+            drawData(1)
 
     def getData(x, y):
         results.append(current)
@@ -147,8 +155,8 @@ def main():
     frame1.pack(side='left')
 
     canvas = Canvas(frame1, bg='white', width=501, height=501)
-    canvas.grid(row=0,column=0,padx=10,pady=10)
-    reset()
+    canvas.grid(row=0, column=0, padx=10, pady=10)
+    reset(0)
     canvas.bind('<Button-1>', addData)
 
     frame2 = Frame(win)
@@ -162,7 +170,7 @@ def main():
     lbl1.pack(pady=10)
 
     txtInput1 = Text(frame2,font=12,width=35,height=1)
-    txtInput1.insert(INSERT,'0.01')
+    txtInput1.insert(INSERT,'0.5')
     txtInput1.pack(padx=10,pady=10)
 
     lbl2 = Label(frame2, text='學習次數:', font=12)
@@ -175,12 +183,32 @@ def main():
     frame3 = Frame(frame2)
     frame3.pack(padx = 10, pady = (15, 10))
 
+    btnLearn1 = Button(frame3, font=12, width=35, height=2, bd=5, text='學習1',
+                       command=lambda :beginLearn(0))
+    btnLearn1.pack(pady=(0,10))
 
-    btnLearn = Button(frame3, font=12, width=35, height=6, bd=5, text='開始學習!', command=beginLearn)
-    btnLearn.pack(pady=(0,10))
+    frame4 = Frame(frame3)
+    frame4.pack(pady=(0, 10))
 
-    btnReset = Button(frame3, font=12, width=35, height=6, bd=5, text='重設', command=reset)
-    btnReset.pack(pady=(0,10))
+    btnLearn2 = Button(frame4, font=12, width=5, height=2, bd=5, text='學習2',
+                       command=lambda :beginLearn(1))
+    btnLearn2.pack(side=LEFT, padx=(0, 3))
+
+    btnLearn3 = Button(frame4, font=12, width=5, height=2, bd=5, text='學習3',
+                       command=lambda: beginLearn(2))
+    btnLearn3.pack(side=LEFT, padx=(0, 3))
+
+    btnLearn4 = Button(frame4, font=12, width=5, height=2, bd=5, text='學習4',
+                       command=lambda: beginLearn(3))
+    btnLearn4.pack(side=LEFT)
+
+    btnReset1 = Button(frame3, font=12, width=35, height=2, bd=5, text='重設(資料維持)',
+                       command=lambda :reset(1))
+    btnReset1.pack(side=TOP, pady=(0, 10))
+
+    btnReset2 = Button(frame3, font=12, width=35, height=2, bd=5, text='重設',
+                       command=lambda :reset(0))
+    btnReset2.pack(side=TOP, pady=(0,10))
     #--------------init ui end------------------
     win.mainloop()
 
