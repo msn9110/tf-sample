@@ -64,7 +64,7 @@ def main():
                 loss = tf.reduce_mean(tf.matmul(tf.abs(Y_ - Y), tf.transpose(tf.matmul(W, tf.transpose(X)) - T)))
 
             offset = tf.reduce_mean(tf.matmul(Y_-Y, X), 0, keep_dims=True)
-            optimizer = tf.train.AdamOptimizer(rate)
+            optimizer = tf.train.GradientDescentOptimizer(rate)
             if mode == 0:
                 train = tf.assign_add(W, tf.scalar_mul(rate, offset))
             else:
@@ -75,11 +75,14 @@ def main():
                 sess.run(init)
                 print(sess.run(W))
                 for t in range(time):
-                    if t % 100 == 0:
-                        sess.run(train, feed_dict={X: train_X, Y: train_Y})
-                        w = sess.run(W)
-                        print(w, -w[0][0]/w[0][1])
-                        drawLinearFunction(w[0][0], w[0][1], mean_x, mean_y, '#CCC')
+                    #loss1 = sess.run(train, feed_dict={X: train_X, Y: train_Y})
+                    #if loss1[0] == 0.:
+                    #    print('learning time : ', t)
+                    #    break
+                    sess.run(train, feed_dict={X: train_X, Y: train_Y})
+                    w = sess.run(W)
+                    print(w, -w[0][0] / w[0][1])
+                    drawLinearFunction(w[0][0], w[0][1], mean_x, mean_y, '#CCC')
                 w = sess.run(W)
             drawAxis()
             drawData(0)
@@ -177,7 +180,7 @@ def main():
     lbl2.pack(pady=10)
 
     txtInput2 = Text(frame2, font=12, width=35, height=1)
-    txtInput2.insert(INSERT,'50000')
+    txtInput2.insert(INSERT,'500')
     txtInput2.pack(padx=10, pady=10)
 
     frame3 = Frame(frame2)
