@@ -22,11 +22,18 @@ def main():
             print('parsing error !')
         else:
             print(rate, ',', time)
-            size0, size1 = len(data[0]), len(data[1])
-            class0 = np.transpose(np.asarray(data[0], np.float32))
-            class1 = np.transpose(np.asarray(data[1], np.float32))
-            mean_x = int((sum(class0[0]) / size0 + sum(class1[0]) / size1) /2)
-            mean_y = int((sum(class0[1]) / size0 + sum(class1[1]) / size1) /2)
+            # optimize threshold start
+            dist = 500000
+            mean_x, mean_y = 0, 0
+            for data0 in data[0]:
+                for data1 in data[1]:
+                    x1, y1 = data0[0], data0[1]
+                    x2, y2 = data1[0], data1[1]
+                    tmp = (x1 - x2) ** 2 + (y1 - y2) ** 2
+                    if tmp < dist:
+                        dist = tmp
+                        mean_x = int((x1 + x2) / 2)
+                        mean_y = int((y1 + y2) / 2)
             threshold = mean_x + mean_y
             print('(mean_x, mean_y, threshold) : (', mean_x, ',', mean_y, ',', threshold, ')')
             x, y = in_normalize(mean_x, mean_y, 250)
@@ -144,7 +151,7 @@ def main():
     lbl1.pack(pady=10)
 
     txtInput1 = Text(frame2,font=12,width=35,height=1)
-    txtInput1.insert(INSERT,'0.001')
+    txtInput1.insert(INSERT,'0.01')
     txtInput1.pack(padx=10,pady=10)
 
     lbl2 = Label(frame2, text='學習次數:', font=12)
