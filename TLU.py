@@ -58,22 +58,18 @@ def main():
             #train = tf.assign_add(W, tf.scalar_mul(rate, offset))
             init = tf.global_variables_initializer()
 
-            slope = -1.0
             w = None
             with tf.Session() as sess:
                 sess.run(init)
-
+                print(sess.run(W))
                 for t in range(time):
-                    if t % 20 == 0:
-                        print(sess.run(W))
+                    if t % 100 == 0:
                         sess.run(train, feed_dict={X: train_X, Y: train_Y})
-                    w = sess.run(W)
-                    m = -w[0][0] / w[0][1]
-                    #if m - slope < 0.02:
-                     #   print('learning time : ', t + 1)
-                     #   break
-                    slope = m
-            print(w[0][0], w[0][1], -w[0][0]/w[0][1])
+                        w = sess.run(W)
+                        print(w, -w[0][0]/w[0][1])
+                        drawLinearFunction(w[0][0], w[0][1], mean_x, mean_y, '#CCC')
+                w = sess.run(W)
+            drawPoint(x, y, color='red')
             drawLinearFunction(w[0][0], w[0][1], mean_x, mean_y, 'red')
 
     def changeColor():
@@ -135,10 +131,6 @@ def main():
     reset()
     canvas.bind('<Button-1>', addData)
 
-    btnLearn = Button(frame1, text='開始學習!', font=(12), height=2, bd=5, command=beginLearn)
-    btnLearn.grid(row=1, column=0, padx=10, sticky=W + E)
-    # btnLearn.place(x=520, y=520)
-
     frame2 = Frame(win)
     frame2.pack()
 
@@ -157,11 +149,18 @@ def main():
     lbl2.pack(pady=10)
 
     txtInput2 = Text(frame2, font=12, width=35, height=1)
-    txtInput2.insert(INSERT,'1000')
+    txtInput2.insert(INSERT,'50000')
     txtInput2.pack(padx=10, pady=10)
 
-    btnReset = Button(frame2, font=12, width=35, height=12, bd=5, text='重設', command=reset)
-    btnReset.pack(padx=10,pady=(250,10))
+    frame3 = Frame(frame2)
+    frame3.pack(padx = 10, pady = (15, 10))
+
+
+    btnLearn = Button(frame3, font=12, width=35, height=6, bd=5, text='開始學習!', command=beginLearn)
+    btnLearn.pack(pady=(0,10))
+
+    btnReset = Button(frame3, font=12, width=35, height=6, bd=5, text='重設', command=reset)
+    btnReset.pack(pady=(0,10))
     #--------------init ui end------------------
     win.mainloop()
 
