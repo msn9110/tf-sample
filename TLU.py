@@ -49,7 +49,9 @@ def main():
             Y = tf.placeholder(tf.float32, shape=[1, len(results)])
 
             # misclassfication function
-            loss = tf.reduce_mean(tf.abs(Y_-Y) * tf.matmul(W,tf.transpose(X)) - T)
+            #loss = tf.reduce_mean(tf.abs(Y_-Y) * tf.matmul(W,tf.transpose(X)) - T)
+            #loss = tf.reduce_mean(tf.matmul(Y_ - Y, tf.transpose(tf.matmul(W, tf.transpose(X)) - T)))
+            loss = tf.reduce_mean(tf.matmul(tf.abs(Y_-Y), tf.transpose(tf.matmul(W, tf.transpose(X)) - T)))
             offset = tf.reshape(tf.reduce_mean(tf.matmul(Y_-Y, X), 0), [1,2])
 
 
