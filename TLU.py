@@ -56,8 +56,8 @@ def main():
 
 
             optimizer = tf.train.GradientDescentOptimizer(rate)
-            train = optimizer.minimize(loss)
-            #train = tf.assign_add(W, tf.scalar_mul(rate, offset))
+            #train = optimizer.minimize(loss)
+            train = tf.assign_add(W, tf.scalar_mul(rate, offset))
             init = tf.global_variables_initializer()
 
             w = None
