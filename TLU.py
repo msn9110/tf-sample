@@ -59,15 +59,14 @@ def main():
             #loss = tf.reduce_mean(tf.abs(Y_-Y) * tf.matmul(W,tf.transpose(X)) - T)
             #loss = tf.reduce_mean(tf.matmul(Y_ - Y, tf.transpose(tf.matmul(W, tf.transpose(X)) - T)))
             loss = tf.reduce_mean(tf.matmul(tf.abs(Y_-Y), tf.transpose(tf.matmul(W, tf.transpose(X)) - T)))
-            offset = tf.reshape(tf.reduce_mean(tf.matmul(Y_-Y, X), 0), [1,2])
+            offset = tf.reduce_mean(tf.matmul(Y_-Y, X), 0, keep_dims=True)
 
 
             optimizer = tf.train.GradientDescentOptimizer(rate)
-            #train = optimizer.minimize(loss)
-            train = tf.assign_add(W, tf.scalar_mul(rate, offset))
+            train = optimizer.minimize(loss)
+            #train = tf.assign_add(W, tf.scalar_mul(rate, offset))
             init = tf.global_variables_initializer()
 
-            w = None
             with tf.Session() as sess:
                 sess.run(init)
                 print(sess.run(W))
@@ -78,6 +77,9 @@ def main():
                         print(w, -w[0][0]/w[0][1])
                         drawLinearFunction(w[0][0], w[0][1], mean_x, mean_y, '#CCC')
                 w = sess.run(W)
+            drawAxis()
+            drawData(0)
+            drawData(1)
             drawPoint(x, y, color='red')
             drawLinearFunction(w[0][0], w[0][1], mean_x, mean_y, 'red')
 
@@ -100,17 +102,26 @@ def main():
         x2, y2 = in_normalize(x2, y2, 250)
         canvas.create_line(x1, y1, x2, y2, fill=color)
 
+    def drawData(class_num):
+        color = colors[class_num]
+        for point in data[class_num]:
+            x, y = in_normalize(point[0], point[1], 250)
+            drawPoint(x, y, color)
+
     def drawPoint(x,y,color):
         size = 5
         x1, y1 = x - size, y - size
         x2, y2 = x + size, y + size
         canvas.create_rectangle(x1, y1, x2, y2, fill=color)
 
+    def drawAxis():
+        canvas.create_line(250, 0, 250, 500)
+        canvas.create_line(0, 250, 500, 250)
+
     def reset():
         nonlocal inputs,results,data
         canvas.delete('all')
-        canvas.create_line(250, 0, 250, 500)
-        canvas.create_line(0, 250, 500, 250)
+        drawAxis()
         data = [[], []]
         inputs=[]
         results=[]
@@ -125,7 +136,7 @@ def main():
     def normalize(x, y, offset):
         return [x-offset, offset-y]
 
-    def in_normalize(x,y,offset):
+    def in_normalize(x, y, offset):
         return x+offset, offset-y
     #---------------init ui start------------------
     win = Tk()
