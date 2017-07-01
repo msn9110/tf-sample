@@ -49,7 +49,7 @@ def main():
             Y = tf.placeholder(tf.float32, shape=[1, len(results)])
 
             # misclassfication function
-            loss = tf.reduce_mean(tf.matmul(Y_-Y,tf.transpose(tf.matmul(W,tf.transpose(X)) - T)))
+            loss = tf.reduce_mean(tf.abs(Y_-Y) * tf.matmul(W,tf.transpose(X)) - T)
             offset = tf.reshape(tf.reduce_mean(tf.matmul(Y_-Y, X), 0), [1,2])
 
 
@@ -135,7 +135,7 @@ def main():
     reset()
     canvas.bind('<Button-1>', addData)
 
-    btnLearn = Button(frame1, text='開始學習!', font=(12), height=3, bd=5, command=beginLearn)
+    btnLearn = Button(frame1, text='開始學習!', font=(12), height=2, bd=5, command=beginLearn)
     btnLearn.grid(row=1, column=0, padx=10, sticky=W + E)
     # btnLearn.place(x=520, y=520)
 
@@ -146,11 +146,11 @@ def main():
     btnChange.pack(padx=10,pady=12)
     #btnChange.place(x=520, y=10)
 
-    lbl1 = Label(frame2, text='學習速率(0<a<=1):', font=12)
+    lbl1 = Label(frame2, text='學習率(0<a<=1):', font=12)
     lbl1.pack(pady=10)
 
     txtInput1 = Text(frame2,font=12,width=35,height=1)
-    txtInput1.insert(INSERT,'0.8')
+    txtInput1.insert(INSERT,'0.001')
     txtInput1.pack(padx=10,pady=10)
 
     lbl2 = Label(frame2, text='學習次數:', font=12)
@@ -160,8 +160,8 @@ def main():
     txtInput2.insert(INSERT,'1000')
     txtInput2.pack(padx=10, pady=10)
 
-    btnReset = Button(frame2, font=12, width=35, height=3, bd=5, text='重設', command=reset)
-    btnReset.pack(padx=10,pady=(320,10))
+    btnReset = Button(frame2, font=12, width=35, height=12, bd=5, text='重設', command=reset)
+    btnReset.pack(padx=10,pady=(250,10))
     #--------------init ui end------------------
     win.mainloop()
 
