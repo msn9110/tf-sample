@@ -44,7 +44,7 @@ def main():
             train_Y = np.asarray(results, np.float32).reshape([1, len(results)])
 
             # create tf model start
-            X = tf.placeholder(tf.float32, shape=[None, 2])
+            X = tf.placeholder(tf.float32, shape=[len(results), 2])
             W = tf.Variable(tf.ones([1,2],tf.float32))
             T = tf.constant(threshold, tf.float32, shape=[1, len(results)])
             result = tf.matmul(W, tf.transpose(X))
@@ -52,37 +52,46 @@ def main():
             # activation function
             Y_ = tf.where(tf.greater_equal(result, T), tf.ones(tf.shape(result), tf.float32),
                                                 tf.zeros(tf.shape(result), tf.float32))
-            #Y_ = tf.cond(tf.greater_equal(result, T), lambda : tf.constant(1.0), lambda : tf.constant(0.0))
             Y = tf.placeholder(tf.float32, shape=[1, len(results)])
 
-            # misclassfication function
-            if mode == 1:
-                loss = tf.reduce_mean(tf.abs(Y_ - Y) * tf.matmul(W, tf.transpose(X)) - T)
-            elif mode == 2:
-                loss = tf.reduce_mean(tf.matmul(Y_ - Y, tf.transpose(tf.matmul(W, tf.transpose(X)) - T)))
-            else:
-                loss = tf.reduce_mean(tf.matmul(tf.abs(Y_ - Y), tf.transpose(tf.matmul(W, tf.transpose(X)) - T)))
+            # misclassfication function -> define loss function
 
-            offset = tf.reduce_mean(tf.matmul(Y_-Y, X), 0, keep_dims=True)
-            optimizer = tf.train.GradientDescentOptimizer(rate)
+            if mode == 1:
+                print(mode)
+                loss = tf.reduce_mean(tf.abs(Y - Y_) * tf.matmul(W, tf.transpose(X)) - T)
+                optimizer = tf.train.AdamOptimizer(rate)
+            elif mode == 2:
+                loss = tf.reduce_mean(tf.matmul(Y - Y_, tf.transpose(tf.matmul(W, tf.transpose(X)) - T)))
+                optimizer = tf.train.AdamOptimizer(rate)
+
+            else:
+                loss = tf.reduce_mean(tf.matmul(Y_ - Y, tf.transpose(tf.matmul(W, tf.transpose(X)) - T)))
+                optimizer = tf.train.GradientDescentOptimizer(rate)
+
+
             if mode == 0:
+                offset = tf.reduce_mean(tf.matmul(Y - Y_, X), 0, keep_dims=True)
                 train = tf.assign_add(W, tf.scalar_mul(rate, offset))
             else:
                 train = optimizer.minimize(loss)
-            init = tf.global_variables_initializer()
+            init = tf.global_variables_initializer() # very important
 
+            # create tf model end
             with tf.Session() as sess:
                 sess.run(init)
                 print(sess.run(W))
                 for t in range(time):
-                    #loss1 = sess.run(train, feed_dict={X: train_X, Y: train_Y})
-                    #if loss1[0] == 0.:
+
+                    #if loss1 == 0.0:
                     #    print('learning time : ', t)
                     #    break
                     sess.run(train, feed_dict={X: train_X, Y: train_Y})
-                    w = sess.run(W)
-                    print(w, -w[0][0] / w[0][1])
-                    drawLinearFunction(w[0][0], w[0][1], mean_x, mean_y, '#CCC')
+                    if t % 100 == 0:
+                        w = sess.run(W)
+                        print(w, -w[0][0] / w[0][1])
+                        loss1 = sess.run(train, feed_dict={X: train_X, Y: train_Y})
+                        print('loss : ', loss1)
+                        drawLinearFunction(w[0][0], w[0][1], mean_x, mean_y, '#CCC')
                 w = sess.run(W)
             drawAxis()
             drawData(0)
@@ -173,14 +182,14 @@ def main():
     lbl1.pack(pady=10)
 
     txtInput1 = Text(frame2,font=12,width=35,height=1)
-    txtInput1.insert(INSERT,'0.5')
+    txtInput1.insert(INSERT,'0.001')
     txtInput1.pack(padx=10,pady=10)
 
     lbl2 = Label(frame2, text='學習次數:', font=12)
     lbl2.pack(pady=10)
 
     txtInput2 = Text(frame2, font=12, width=35, height=1)
-    txtInput2.insert(INSERT,'500')
+    txtInput2.insert(INSERT,'50000')
     txtInput2.pack(padx=10, pady=10)
 
     frame3 = Frame(frame2)
